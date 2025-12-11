@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>壺壺茶-線上下單</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    html, body {
+      height: 100%;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "PingFang TC", "Microsoft JhengHei", sans-serif;
+      background: #f5f5f7;
+      color: #222;
+    }
+    .app {
+      max-width: 960px;
+      margin: 0 auto;
+      height: 100vh;          /* 原本是 min-height: 100vh; 改成固定高度 */
+      display: flex;
+      flex-direction: column;
+    }
+    
+    header {
+      padding: 12px 16px;
+      background: #ffffff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    header h1 {
+      font-size: 20px;
+      font-weight: 700;
+    }
+    header button {
+      border: none;
+      background: none;
+      font-size: 14px;
+      color: #2253a0;
+      cursor: pointer;
+    }
+
+    .main {
+      display: flex;
+      flex: 1;
+      padding: 12px 8px 88px;
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    /* 左邊分類 */
+    .category-panel {
+      width: 26%;
+      max-width: 220px;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    #categoryList {
+      flex: 1;
+      display: flex;
+      flex-direction: column;  /* 垂直排列按鈕 */
+      gap: 4px;
+      overflow-y: auto;        /* 上下捲動 */
+      overflow-x: hidden;      /* 不要左右捲動 */
+    }
+      
+    #categoryList::-webkit-scrollbar {
+      height: 6px;           /* 可選：讓橫向捲軸小一點好看 */
+    }
+    .category-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .category-btn {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: none;
+      text-align: left;
+      font-size: 14px;
+      cursor: pointer;
+      background: transparent;
+    }
+    .category-btn.active {
+      background: #cfe3f3;
+      color: #2253a0;
+      font-weight: 600;
+    }
+
+    /* 中間品項 */
+    .item-panel {
+      flex: 1;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .section-header h2 {
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .item-list {
+      flex: 1;      
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .item-card {
+      border-radius: 14px;
+      border: 1px solid #eee;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: box-shadow 0.15s ease, transform 0.08s ease;
+    }
+    .item-card:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      transform: translateY(-1px);
+    }
+    .item-name {
+      font-size: 15px;
+      font-weight: 500;
+    }
+    .item-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 14px;
+    }
+    .item-price {
+      font-weight: 700;
+      color: #2253a0;
+    }
+    .item-stock {
+      font-size: 12px;
+      color: #888;
+    }
+
+    /* 右邊購物車(桌機顯示) */
+    .cart-panel {
+      width: 28%;
+      max-width: 260px;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      /* ★ 新增這行，讓子元素可以正確分配高度 */
+      min-height: 0;
+    }
+    .cart-item {
+      padding: 6px 0;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .cart-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .cart-name {
+      font-weight: 500;
+    }
+    .cart-line-total {
+      font-weight: 600;
+      color: #2253a0;
+    }
+    .cart-bottom-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .qty-control {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .qty-btn {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      background: #e0e7ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+    .qty-value {
+      width: 24px;
+      text-align: center;
+    }
+
+    .cart-empty {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #777;
+    }
+
+    .cart-summary {
+      margin-top: 8px;
+      border-top: 1px solid #eee;
+      padding-top: 8px;
+      font-size: 14px;
+    }
+    .cart-summary-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 3px;
+    }
+    .cart-summary-row strong {
+      font-weight: 700;
+    }
+    .checkout-btn {
+      margin-top: 8px;
+      width: 100%;
+      border-radius: 999px;
+      border: none;
+      padding: 10px 0;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      background: #2253a0;
+      color: #fff;
+    }
+    .checkout-btn:disabled {
+      background: #d1d5db;
+      cursor: default;
+    }
+    /* 購物車內依分類群組的標題 */
+    .cart-category-title {
+      margin-top: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #444;
+    }
+    
+    /* 讓品項看起來是分類底下，用一點縮排 */
+    .cart-item {
+      padding: 6px 0;
+      padding-left: 8px;      /* ★ 新增縮排 */
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    /* 底部固定訊息/錯誤 */
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 12px;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.85);
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      z-index: 50;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease;
+    }
+    .toast.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* 會員資料彈窗 & 購物車彈窗共用 */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 40;
+    }
+    .modal-backdrop.show {
+      display: flex;
+    }
+    .modal {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 16px 18px;
+      width: 90%;
+      max-width: 420px;
+    }
+    .modal h2 {
+      font-size: 18px;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+    .modal p {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 8px;
+    }
+    .field {
+      margin-bottom: 10px;
+    }
+    .field label {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+    .field input, .field textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid #d1d5db;
+      font-size: 14px;
+      resize: vertical;
+    }
+    .modal-actions {
+      margin-top: 10px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .btn-secondary {
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: none;
+      background: #e5e7eb;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .btn-primary {
+      padding: 8px 18px;
+      border-radius: 999px;
+      border: none;
+      background: #2253a0;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* 浮動購物車按鈕（手機用） */
+    .cart-fab {
+      display: none; /* 預設隱藏，手機版才顯示 */
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      border-radius: 999px;
+      border: none;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      background: #2253a0;
+      color: #fff;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+      z-index: 45;
+      align-items: center;
+      gap: 4px;
+    }
+    .cart-fab span {
+      font-weight: 700;
+    }
+
+    @media (max-width: 768px) {
+      .main {
+        flex-direction: column;
+        padding-bottom: 80px;
+      }
+      .category-panel {
+        width: 100%;
+        max-width: none;
+        border-radius: 0;
+        border-bottom-left-radius: 16px;
+        border-bottom-right-radius: 16px;
+      }
+      .category-title {
+        display: none;
+      }
+    
+      /* 原本這裡的 .category-btn 改成這樣 */
+      .category-btn {
+        flex: 0 0 25%;       /* 固定佔一列的 1/4 */
+        max-width: 25%;
+        white-space: nowrap; /* 文字不要換行 */
+        flex-shrink: 0;
+        text-align: center;  /* 置中比較像 Tab 標籤 */
+        padding: 6px 4px;    /* 縮小一點 padding，按鈕比較不會太高 */
+        font-size: 13px;
+      }
+    
+      #categoryList {
+        display: flex;
+        flex-direction: row;
+        gap: 4px;
+        overflow-x: auto;
+        overflow-y: hidden;
+      }
+    
+      .item-panel {
+        width: 100%;
+        margin-top: 8px;
+      }
+    
+      .cart-panel {
+        display: none;
+      }
+    
+      .cart-fab {
+        display: flex;
+      }
+    }
+    
+    #deliveryRow {
+      cursor: pointer;
+    }
+    #cartList {
+      flex: 1;              /* 吃掉剩餘高度 */
+      overflow-y: auto;     /* 垂直捲動 */
+      padding-right: 4px;   /* 避免捲軸蓋住內容，可視需要調整 */
+      min-height: 0;        /* 搭配 flex 正常收縮 */
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>初沁科技有限公司</h1>
+    <button id="memberButton">會員資料</button>
+  </header>
+
+  <div class="main">
+    <aside class="category-panel">
+      <div class="category-title">分類</div>
+      <div id="categoryList"></div>
+    </aside>
+
+    <main class="item-panel">
+      <div class="section-header">
+      <h2 id="currentCategoryTitle"></h2>
+        <span style="font-size:12px;color:#999;">點擊品項即可加入購物車</span>
+      </div>
+      <div class="item-list" id="itemList"></div>
+    </main>
+
+    <aside class="cart-panel">
+      <div class="section-header">
+        <h2>購物車</h2>
+      </div>
+      <div id="cartList"></div>
+      <div class="cart-summary" id="cartSummary"></div>
+      <button class="checkout-btn" id="checkoutBtn" disabled>送出訂單</button>
+    </aside>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- 會員資料 Modal -->
+<div class="modal-backdrop" id="memberModal">
+  <div class="modal">
+    <h2>會員資料</h2>
+    <p>第一次下單請先填寫，下次會自動帶入，可在此畫面修改。</p>
+    <div class="field">
+      <label for="memberName">姓名</label>
+      <input id="memberName" type="text" autocomplete="name" />
+    </div>
+    <div class="field">
+      <label for="memberPhone">電話</label>
+      <input id="memberPhone" type="tel" autocomplete="tel" />
+    </div>
+    <div class="field">
+      <label for="memberAddress">地址</label>
+      <textarea id="memberAddress" rows="2"></textarea>
+    </div>
+    <div class="field" id="deliveryRow">
+      <label>希望送達時間</label>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <input id="deliveryDate" type="date"
+               style="flex:1 1 120px; min-width:120px;" />
+        <select id="deliveryHour" style="flex:0 0 72px; min-width:72px;"></select>
+        <select id="deliveryMinute" style="flex:0 0 72px; min-width:72px;"></select>
+      </div>
+</div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="memberCancelBtn">取消</button>
+      <button class="btn-primary" id="memberSaveBtn">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 手機用：浮動購物車按鈕 -->
+<button class="cart-fab" id="cartFab">
+  🛒<span id="cartFabCount">0</span>
+</button>
+
+<!-- 手機用：購物車 Modal -->
+<div class="modal-backdrop" id="cartModal">
+  <div class="modal cart-modal">
+    <h2>購物車</h2>
+    <div id="cartModalList"></div>
+    <div class="cart-summary" id="cartModalSummary"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="cartModalCloseBtn">關閉</button>
+      <button class="btn-primary" id="cartModalCheckoutBtn">送出訂單</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ==== 設定你的 Apps Script Web App URL ====
+  const API_BASE_URL = "https://script.google.com/macros/s/AKfycbweoDKyyd3YvG3nnXQENlwJFQHbgq6p4pRyqIa55Ip0EIhag706xIadJ-vx5_8AQBL4Lw/exec";
+
+  // ==== 狀態 ====
+  let allItems = [];        // 從 Sheet 取得的品項原始資料
+  let categories = [];      // 類別名稱陣列
+  let currentCategory = "";
+  let cart = [];            // [{ category, name, price, stock, quantity }]
+  let member = {
+    name: "",
+    phone: "",
+    address: "",
+    deliveryTime: ""
+  };
+
+  // ==== DOM ====
+  const categoryListEl = document.getElementById("categoryList");
+  const itemListEl = document.getElementById("itemList");
+  const cartListEl = document.getElementById("cartList");
+  const cartSummaryEl = document.getElementById("cartSummary");
+  const checkoutBtn = document.getElementById("checkoutBtn");
+  const toastEl = document.getElementById("toast");
+  const deliveryRow = document.getElementById("deliveryRow");
+  const deliveryDateInput = document.getElementById("deliveryDate");
+  const deliveryHourSelect = document.getElementById("deliveryHour");
+  const deliveryMinuteSelect = document.getElementById("deliveryMinute");
+  const memberButton = document.getElementById("memberButton");
+  const memberSaveBtn = document.getElementById("memberSaveBtn");
+  const memberCancelBtn = document.getElementById("memberCancelBtn");
+  const memberModal = document.getElementById("memberModal");
+  const memberNameInput = document.getElementById("memberName");
+  const memberPhoneInput = document.getElementById("memberPhone");
+  const memberAddressInput = document.getElementById("memberAddress");
+
+  // 手機購物車相關 DOM
+  const cartFab = document.getElementById("cartFab");
+  const cartFabCount = document.getElementById("cartFabCount");
+  const cartModal = document.getElementById("cartModal");
+  const cartModalListEl = document.getElementById("cartModalList");
+  const cartModalSummaryEl = document.getElementById("cartModalSummary");
+  const cartModalCloseBtn = document.getElementById("cartModalCloseBtn");
+  const cartModalCheckoutBtn = document.getElementById("cartModalCheckoutBtn");
+
+  // ==== 工具 ====
+
+  // 初始化送達時間的「小時 / 分鐘」選單
+  function initDeliveryTimeSelectors() {
+    // 小時 00~23
+    for (let h = 0; h < 24; h++) {
+      const opt = document.createElement("option");
+      const val = h.toString().padStart(2, "0");
+      opt.value = val;
+      opt.textContent = val;
+      deliveryHourSelect.appendChild(opt);
+    }
+  
+    // 分鐘 00 / 10 / 20 / 30 / 40 / 50
+    [0, 10, 20, 30, 40, 50].forEach(m => {
+      const opt = document.createElement("option");
+      const val = m.toString().padStart(2, "0");
+      opt.value = val;
+      opt.textContent = val;
+      deliveryMinuteSelect.appendChild(opt);
+    });
+  }
+
+
+  function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    setTimeout(() => toastEl.classList.remove("show"), 2200);
+  }
+
+  function loadMemberFromStorage() {
+    try {
+      const raw = localStorage.getItem("webOrderMember");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        member = {
+          name: parsed.name || "",
+          phone: parsed.phone || "",
+          address: parsed.address || "",
+          deliveryTime: parsed.deliveryTime || ""
+        };
+      }
+    } catch (e) {
+      console.warn("load member failed", e);
+    }
+  }
+
+  function saveMemberToStorage() {
+    localStorage.setItem("webOrderMember", JSON.stringify(member));
+  }
+
+  /**
+   * 開啟會員資料視窗
+   * @param {boolean} force       是否強制填（取消時不能關閉）
+   * @param {boolean} fromCheckout 是否從「送出訂單」流程進來
+   */
+    function openMemberModal(force = false, fromCheckout = false) {
+      // 將目前 member 狀態填回 input
+      memberNameInput.value = member.name || "";
+      memberPhoneInput.value = member.phone || "";
+      memberAddressInput.value = member.address || "";
+    
+      memberModal.dataset.checkout = fromCheckout ? "1" : "0";
+    
+      // 依來源切換按鈕文字
+      memberSaveBtn.textContent = fromCheckout ? "確認訂單送出" : "儲存";
+    
+      if (fromCheckout) {
+        deliveryRow.style.display = "block";
+    
+        // 預設成「現在」時間，分鐘對齊到 10 分鐘一格
+        const now = new Date();
+    
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, "0");
+        const dd = String(now.getDate()).padStart(2, "0");
+    
+        let hh = now.getHours();
+        let m = now.getMinutes();
+        m = Math.floor(m / 10) * 10;  // 0,10,20,30,40,50
+    
+        deliveryDateInput.value = `${yyyy}-${mm}-${dd}`;
+        deliveryHourSelect.value = String(hh).padStart(2, "0");
+        deliveryMinuteSelect.value = String(m).padStart(2, "0");
+      } else {
+        // 從「會員資料」按鈕進來：不需要送達時間
+        deliveryRow.style.display = "none";
+      }
+      cartModal.classList.remove("show");    
+      memberModal.classList.add("show");
+    }
+
+
+    function closeMemberModal() {
+      memberModal.classList.remove("show");
+      memberModal.dataset.checkout = "0";
+    }
+
+  // ==== 抓菜單 ====
+
+  async function loadMenu() {
+    try {
+      const resp = await fetch(API_BASE_URL);
+      const data = await resp.json();
+      allItems = (data.items || []).filter(it => it.price != null);
+  
+      const catSet = new Set();
+      allItems.forEach(it => catSet.add(it.category));
+      categories = [...Array.from(catSet)];
+  
+      // 預設選第一個種類，並設定標題
+      if (categories.length > 0) {
+        currentCategory = categories[0];
+        document.getElementById("currentCategoryTitle").textContent = currentCategory;
+      }
+  
+      renderCategories();
+      renderItems();
+    } catch (err) {
+      console.error(err);
+      showToast("載入菜單失敗，請稍後再試");
+    }
+  }
+
+
+  // ==== Render ====
+
+  function renderCategories() {
+    categoryListEl.innerHTML = "";
+    categories.forEach(cat => {
+      const btn = document.createElement("button");
+      btn.className = "category-btn" + (cat === currentCategory ? " active" : "");
+      btn.textContent = cat;
+      btn.onclick = () => {
+        currentCategory = cat;
+        document.getElementById("currentCategoryTitle").textContent = cat;
+        renderCategories();
+        renderItems();
+      };
+      categoryListEl.appendChild(btn);
+    });
+  }
+
+  function renderItems() {
+    itemListEl.innerHTML = "";
+    const items = allItems.filter(it => {
+      if (!currentCategory) return true;
+      return it.category === currentCategory;
+    });
+
+    if (!items.length) {
+      itemListEl.innerHTML = '<p style="font-size:13px;color:#777;">目前沒有品項</p>';
+      return;
+    }
+
+    items.forEach(it => {
+      const card = document.createElement("div");
+      card.className = "item-card";
+      card.onclick = () => addToCart(it);
+
+      const nameEl = document.createElement("div");
+      nameEl.className = "item-name";
+      nameEl.textContent = it.item;
+
+      const infoRow = document.createElement("div");
+      infoRow.className = "item-info";
+
+      const priceEl = document.createElement("span");
+      priceEl.className = "item-price";
+      priceEl.textContent = `$${it.price}`;
+
+      const stockEl = document.createElement("span");
+      const stockValue = it.stock != null ? it.stock : 0;
+      stockEl.className = "item-stock";
+      stockEl.textContent = `庫存 ${stockValue}`;
+
+      infoRow.appendChild(priceEl);
+      infoRow.appendChild(stockEl);
+
+      card.appendChild(nameEl);
+      card.appendChild(infoRow);
+
+      itemListEl.appendChild(card);
+    });
+  }
+
+  function createCartItemElement(item, onMinus, onPlus) {
+    const container = document.createElement("div");
+    container.className = "cart-item";
+
+    const topRow = document.createElement("div");
+    topRow.className = "cart-top-row";
+
+    const nameEl = document.createElement("div");
+    nameEl.className = "cart-name";
+    nameEl.textContent = item.name;
+
+    const lineTotalEl = document.createElement("div");
+    lineTotalEl.className = "cart-line-total";
+    lineTotalEl.textContent = `$${item.price * item.quantity}`;
+
+    topRow.appendChild(nameEl);
+    topRow.appendChild(lineTotalEl);
+
+    const bottomRow = document.createElement("div");
+    bottomRow.className = "cart-bottom-row";
+
+    const priceInfo = document.createElement("span");
+    priceInfo.style.fontSize = "12px";
+    priceInfo.textContent = `單價 $${item.price}`;
+
+    const qtyControl = document.createElement("div");
+    qtyControl.className = "qty-control";
+
+    const minusBtn = document.createElement("button");
+    minusBtn.className = "qty-btn";
+    minusBtn.textContent = "-";
+    minusBtn.onclick = onMinus;
+
+    const qtyVal = document.createElement("span");
+    qtyVal.className = "qty-value";
+    qtyVal.textContent = item.quantity;
+
+    const plusBtn = document.createElement("button");
+    plusBtn.className = "qty-btn";
+    plusBtn.textContent = "+";
+    plusBtn.onclick = onPlus;
+
+    if (item.quantity >= item.stock) {
+      plusBtn.disabled = true;
+      plusBtn.style.opacity = 0.4;
+    }
+
+    qtyControl.appendChild(minusBtn);
+    qtyControl.appendChild(qtyVal);
+    qtyControl.appendChild(plusBtn);
+
+    bottomRow.appendChild(priceInfo);
+    bottomRow.appendChild(qtyControl);
+
+    container.appendChild(topRow);
+    container.appendChild(bottomRow);
+
+    return container;
+  }
+
+  function renderCart() {
+    cartListEl.innerHTML = "";
+    cartModalListEl.innerHTML = "";
+  
+    if (!cart.length) {
+      const emptyHtml = '<div class="cart-empty">尚未選擇品項</div>';
+      cartListEl.innerHTML = emptyHtml;
+      cartModalListEl.innerHTML = emptyHtml;
+      cartSummaryEl.innerHTML = "";
+      cartModalSummaryEl.innerHTML = "";
+      checkoutBtn.disabled = true;
+      cartModalCheckoutBtn.disabled = true;
+      cartFabCount.textContent = "0";
+      return;
+    }
+  
+    // 小計
+    let subtotal = 0;
+    cart.forEach(c => subtotal += c.price * c.quantity);
+    cartFabCount.textContent = String(cart.length);
+  
+    // ★ 依分類分組：{ "A013": [item1, item2...], "A014": [...] }
+    const grouped = {};
+    cart.forEach(item => {
+      const cat = item.category || "";
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(item);
+    });
+  
+    // ★ 依分類顯示：分類標題 + 底下品項
+    Object.keys(grouped)
+      .sort()                       // 分類排序：A013, A014...
+      .forEach(cat => {
+        // 分類標題（桌機版）
+        if (cat) {
+          const headerPC = document.createElement("div");
+          headerPC.className = "cart-category-title";
+          headerPC.textContent = cat;
+          cartListEl.appendChild(headerPC);
+  
+          // 分類標題（手機版）
+          const headerMobile = document.createElement("div");
+          headerMobile.className = "cart-category-title";
+          headerMobile.textContent = cat;
+          cartModalListEl.appendChild(headerMobile);
+        }
+  
+        // 該分類底下的所有品項
+        grouped[cat].forEach(item => {
+          // 桌機版
+          const pcElement = createCartItemElement(
+            item,
+            () => changeQty(item, -1),
+            () => changeQty(item, +1)
+          );
+          cartListEl.appendChild(pcElement);
+  
+          // 手機 modal 版
+          const mobileElement = createCartItemElement(
+            item,
+            () => changeQty(item, -1),
+            () => changeQty(item, +1)
+          );
+          cartModalListEl.appendChild(mobileElement);
+        });
+      });
+  
+    const summaryHtml = `
+      <div class="cart-summary-row">
+        <span>小計</span>
+        <span><strong>$${subtotal}</strong></span>
+      </div>
+    `;
+    cartSummaryEl.innerHTML = summaryHtml;
+    cartModalSummaryEl.innerHTML = summaryHtml;
+  
+    checkoutBtn.disabled = false;
+    cartModalCheckoutBtn.disabled = false;
+  }
+
+  // ==== 購物車操作 ====
+
+  function addToCart(item) {
+    const stock = item.stock != null ? item.stock : 0;
+    if (stock <= 0) {
+      showToast("此品項庫存不足");
+      return;
+    }
+    const key = item.category + "||" + item.item;
+    const existing = cart.find(c => c.key === key);
+
+    if (existing) {
+      if (existing.quantity >= existing.stock) {
+        showToast("已達庫存上限");
+        return;
+      }
+      existing.quantity += 1;
+    } else {
+      cart.push({
+        key,
+        category: item.category,
+        name: item.item,
+        price: item.price,
+        stock: stock,
+        quantity: 1
+      });
+    }
+    renderCart();
+  }
+
+  function changeQty(cartItem, delta) {
+    const idx = cart.findIndex(c => c.key === cartItem.key);
+    if (idx === -1) return;
+    const item = cart[idx];
+    const newQty = item.quantity + delta;
+    if (newQty <= 0) {
+      cart.splice(idx, 1);
+    } else if (newQty > item.stock) {
+      showToast("已達庫存上限");
+      return;
+    } else {
+      item.quantity = newQty;
+    }
+    renderCart();
+  }
+
+  // ==== 結帳流程：先開會員視窗，再真正送單 ====
+
+  function startCheckout() {
+    if (!cart.length) {
+      showToast("請先選擇品項");
+      return;
+    }
+    const hasMember = member.name && member.phone && member.address;
+    // 有填過就給他看一次確認，沒填過就強制填寫
+    openMemberModal(!hasMember, true);
+  }
+
+  // 真正送出到 Apps Script
+  async function submitOrder() {
+    if (!cart.length) {
+      showToast("請先選擇品項");
+      return;
+    }
+
+    if (!member.name || !member.phone || !member.address) {
+      showToast("請先填寫會員資料");
+      openMemberModal(true, true);
+      return;
+    }
+
+    let subtotal = 0;
+    const itemsPayload = cart.map(c => {
+      const lineTotal = c.price * c.quantity;
+      subtotal += lineTotal;
+      return {
+        category: c.category,
+        name: c.name,
+        price: c.price,
+        quantity: c.quantity,
+        lineTotal
+      };
+    });
+
+    const payload = {
+      source: "WEB",
+      customerName: member.name,
+      customerPhone: member.phone,
+      customerAddress: member.address,
+      deliveryTime: member.deliveryTime,
+      items: itemsPayload,
+      subtotal,
+      discountType: "amount",
+      discountValue: 0,
+      discountAmount: 0,
+      total: subtotal
+    };
+
+    checkoutBtn.disabled = true;
+    cartModalCheckoutBtn.disabled = true;
+    checkoutBtn.textContent = "送出中…";
+    cartModalCheckoutBtn.textContent = "送出中…";
+
+    try {
+      const resp = await fetch(API_BASE_URL, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      const text = await resp.text();
+      console.log("raw response:", text);
+      const data = JSON.parse(text);
+
+      if (data.status === "ok") {
+        showToast("訂單送出成功！訂單編號：" + (data.orderId || ""));
+        cart = [];
+        renderCart();
+        cartModal.classList.remove("show"); // 手機關掉購物車 modal
+      } else {
+        showToast("送出失敗：" + (data.message || "未知錯誤"));
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("送出訂單失敗，請稍後再試");
+    } finally {
+      checkoutBtn.disabled = !cart.length;
+      cartModalCheckoutBtn.disabled = !cart.length;
+      checkoutBtn.textContent = "送出訂單";
+      cartModalCheckoutBtn.textContent = "送出訂單";
+    }
+  }
+
+  // ==== 事件註冊 ====
+
+  // 上方「會員資料」按鈕：單純開資料視窗，不送單
+  memberButton.addEventListener("click", () => openMemberModal(false, false));
+
+  // 會員視窗「儲存」按鈕
+  memberSaveBtn.addEventListener("click", () => {
+    const name = memberNameInput.value.trim();
+    const phone = memberPhoneInput.value.trim();
+    const address = memberAddressInput.value.trim();
+    const fromCheckout = memberModal.dataset.checkout === "1";
+  
+    if (!name || !phone || !address) {
+      showToast("請填寫姓名、電話與地址");
+      return;
+    }
+  
+    let deliveryTime = member.deliveryTime || "";
+  
+    // 從「送出訂單」流程進來，才需要日期 + 時間
+    if (fromCheckout) {
+      const d = deliveryDateInput.value;
+      const h = deliveryHourSelect.value;
+      const m = deliveryMinuteSelect.value;
+  
+      if (!d || !h || !m) {
+        showToast("請選擇送達日期與時間");
+        return;
+      }
+  
+      // 組成類似原本 datetime-local 的格式：YYYY-MM-DDTHH:MM
+      deliveryTime = `${d}T${h}:${m}`;
+    }
+  
+    member = { name, phone, address, deliveryTime };
+    saveMemberToStorage();
+    closeMemberModal();
+  
+    if (fromCheckout) {
+      // 直接送出訂單
+      submitOrder();
+    } else {
+      showToast("會員資料已儲存");
+    }
+  });
+
+
+
+
+  memberCancelBtn.addEventListener("click", () => {
+    closeMemberModal();
+  });
+
+
+  // 手機購物車 modal 事件
+  cartFab.addEventListener("click", () => {
+    cartModal.classList.add("show");
+  });
+  cartModalCloseBtn.addEventListener("click", () => {
+    cartModal.classList.remove("show");
+  });
+
+  // 手機 / 桌機的「送出訂單」都走 startCheckout
+  cartModalCheckoutBtn.addEventListener("click", () => {
+    if (!cart.length) {
+      showToast("請先選擇品項");
+      return;
+    }
+    openMemberModal(false, true);
+  });
+  checkoutBtn.addEventListener("click", () => {
+    if (!cart.length) {
+      showToast("請先選擇品項");
+      return;
+    }
+    // 從「送出訂單」進來 → 需要日期+時間
+    openMemberModal(false, true);
+  });
+
+  // ==== 初始化 ====
+  initDeliveryTimeSelectors();  
+  loadMemberFromStorage();
+  loadMenu();
+  renderCart(); // 初始化畫面
+</script>
+
+</body>
+</html>
