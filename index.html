@@ -544,7 +544,7 @@
 
 <script>
   // ==== 設定你的 Apps Script Web App URL ====
-  const API_BASE_URL = "https://script.google.com/macros/s/AKfycbwuI4etlXGaN7DEjN6-oVaaVlwawjDnh3l13wpwQ7kjri9lkFk858cDGdiFEes0474e/exec";
+  const API_BASE_URL = "https://script.google.com/macros/s/AKfycbyH8JTPX86VWs5HQUE5V99Qxm4tHUvVt2w1khH6tL_RRedCcl_N-vfa_N4LYisoau0H/exec";
 
   // ==== 狀態 ====
   let allItems = [];        // 從 Sheet 取得的品項原始資料
@@ -971,6 +971,7 @@
   }
 
   // 真正送出到 Apps Script
+  // 真正送出→改成「建立 LINE Pay 付款 + 轉跳」
   async function submitOrder() {
     if (!cart.length) {
       showToast("請先選擇品項");
@@ -997,6 +998,7 @@
     });
 
     const payload = {
+      action: "createLinePayPayment",   // ★ 告訴後端要先建立 LINE Pay 付款
       source: "WEB",
       customerName: member.name,
       customerPhone: member.phone,
@@ -1012,8 +1014,8 @@
 
     checkoutBtn.disabled = true;
     cartModalCheckoutBtn.disabled = true;
-    checkoutBtn.textContent = "送出中…";
-    cartModalCheckoutBtn.textContent = "送出中…";
+    checkoutBtn.textContent = "前往付款中…";
+    cartModalCheckoutBtn.textContent = "前往付款中…";
 
     try {
       const resp = await fetch(API_BASE_URL, {
@@ -1024,24 +1026,26 @@
       console.log("raw response:", text);
       const data = JSON.parse(text);
 
-      if (data.status === "ok") {
-        showToast("訂單送出成功！訂單編號：" + (data.orderId || ""));
-        cart = [];
-        renderCart();
-        cartModal.classList.remove("show"); // 手機關掉購物車 modal
+      if (data.status === "ok" && data.paymentUrl) {
+        // 不在這裡清空購物車，等付款成功再說
+        window.location.href = data.paymentUrl;  // ★ 直接跳到 LINE Pay 付款畫面
       } else {
-        showToast("送出失敗：" + (data.message || "未知錯誤"));
+        showToast("建立付款連結失敗：" + (data.message || "未知錯誤"));
+        checkoutBtn.disabled = false;
+        cartModalCheckoutBtn.disabled = false;
+        checkoutBtn.textContent = "送出訂單";
+        cartModalCheckoutBtn.textContent = "送出訂單";
       }
     } catch (err) {
       console.error(err);
-      showToast("送出訂單失敗，請稍後再試");
-    } finally {
-      checkoutBtn.disabled = !cart.length;
-      cartModalCheckoutBtn.disabled = !cart.length;
+      showToast("建立付款連結失敗，請稍後再試");
+      checkoutBtn.disabled = false;
+      cartModalCheckoutBtn.disabled = false;
       checkoutBtn.textContent = "送出訂單";
       cartModalCheckoutBtn.textContent = "送出訂單";
     }
   }
+
 
   // ==== 事件註冊 ====
 
